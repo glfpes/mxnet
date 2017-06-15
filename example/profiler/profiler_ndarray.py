@@ -129,7 +129,7 @@ def test_ndarray_onehot():
         indices = np.random.randint(shape[1], size=shape[0])
         npy[:] = 0.0
         npy[np.arange(shape[0]), indices] = 1.0
-        mx.nd.onehot_encode(mx.nd.array(indices), out=arr)
+        mx.nd.one_hot(mx.nd.array(indices), shape[1], out=arr)
         assert same(npy, arr.asnumpy())
 
 
@@ -201,19 +201,6 @@ def test_ndarray_slice():
     A2[3:8] *= 10;
     A[3:8] = A2[3:8]
     assert same(A[3:8].asnumpy(), A2[3:8])
-
-
-def test_ndarray_slice_along_axis():
-    arr = mx.nd.array(np.random.uniform(-10, 10, (3, 4, 2, 3)))
-    sub_arr = mx.nd.zeros((3, 2, 2, 3))
-    arr._copy_slice_to(1, 1, 3, sub_arr)
-
-    # test we sliced correctly
-    assert same(arr.asnumpy()[:, 1:3, :, :], sub_arr.asnumpy())
-
-    # test that slice is copy, instead of shared memory
-    sub_arr[:] = 0
-    assert not same(arr.asnumpy()[:, 1:3, :, :], sub_arr.asnumpy())
 
 
 def test_clip():
@@ -293,7 +280,6 @@ def test_broadcast():
 if __name__ == '__main__':
     mx.profiler.profiler_set_config(mode='all', filename='profile_ndarray.json')
     mx.profiler.profiler_set_state('run')
-    test_ndarray_slice_along_axis()
     test_broadcast()
     test_ndarray_elementwise()
     test_ndarray_slice()
