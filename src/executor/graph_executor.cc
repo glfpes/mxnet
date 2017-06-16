@@ -9,6 +9,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "../common/nnvm_utils.h"
 #include "./exec_pass.h"
 #include "./graph_executor.h"
 #include "../engine/profiler.h"
@@ -243,10 +244,12 @@ nnvm::Graph GraphExecutor::InitFullGraph(nnvm::Symbol symbol,
   zero_ops.push_back(nnvm::Op::Get("_zeros"));
 
   // take gradient
-  nnvm::Graph g_grad = nnvm::pass::Gradient(
-      g, symbol.outputs, xs, head_grad_entry_,
-      AggregateGradient, need_mirror, nullptr,
-      zero_ops);
+  nnvm::Graph g_grad;
+  MXNET_PROFILER_NNVM_PASS("Gradient",
+    g_grad = nnvm::pass::Gradient(
+        g, symbol.outputs, xs, head_grad_entry_,
+        AggregateGradient, need_mirror, nullptr,
+        zero_ops));
   CHECK_EQ(g_grad.outputs.size(), xs.size());
   for (const auto &e : g_grad.outputs) {
     g.outputs.push_back(e);
@@ -703,7 +706,7 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
       arg_storage_id[eid] = kExternalStorageID;
     }
     g.attrs["storage"] = std::make_shared<dmlc::any>(std::move(arg_storage_id));
-    g = nnvm::ApplyPass(g, "PlanMemory");
+    g = common::ApplyPass(g, "PlanMemory");
   }
   g = DetectInplaceAddTo(g);
 
