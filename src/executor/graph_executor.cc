@@ -347,7 +347,8 @@ Graph AssignContext(Graph g,
   }
 
   g.attrs["device"] = std::make_shared<dmlc::any>(std::move(device));
-  g = nnvm::pass::PlaceDevice(g, "__ctx_group__", device_map, "_CrossDeviceCopy");
+  MXNET_PROFILER_NNVM_PASS("PlaceDevice",
+    g = nnvm::pass::PlaceDevice(g, "__ctx_group__", device_map, "_CrossDeviceCopy"));
   const auto& assigned_device = g.GetAttr<nnvm::DeviceVector>("device");
 
   ContextVector vcontext;
@@ -471,14 +472,16 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
 
   // expand arg_shapes and arg_dtypes to contain backward inputs
   arg_shapes.resize(idx.input_nodes().size(), TShape());
-  g = nnvm::pass::InferShape(g, arg_shapes, "__shape__");
+  MXNET_PROFILER_NNVM_PASS("InferShape",
+    g = nnvm::pass::InferShape(g, arg_shapes, "__shape__"));
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) {
     HandleInferShapeError(num_forward_inputs_, g.indexed_graph(),
                           g.GetAttr<nnvm::ShapeVector>("shape"));
   }
 
   arg_dtypes.resize(idx.input_nodes().size(), -1);
-  g = nnvm::pass::InferType(g, arg_dtypes, "__dtype__");
+  MXNET_PROFILER_NNVM_PASS("InferType",
+    g = nnvm::pass::InferType(g, arg_dtypes, "__dtype__"));
   if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
                          g.GetAttr<nnvm::DTypeVector>("dtype"));
@@ -708,11 +711,14 @@ void GraphExecutor::FinishInitGraph(nnvm::Symbol symbol,
     g.attrs["storage"] = std::make_shared<dmlc::any>(std::move(arg_storage_id));
     g = common::ApplyPass(g, "PlanMemory");
   }
-  g = DetectInplaceAddTo(g);
+  MXNET_PROFILER_NNVM_PASS("DetectInplaceAddTo",
+    g = DetectInplaceAddTo(g));
 
   g.attrs["saved_opr"] = std::make_shared<nnvm::any>(std::move(saved_opr_));
-  g = AttachOpExecs(g);
-  g = AttachOpResources(g);
+  MXNET_PROFILER_NNVM_PASS("AttachOpExecs",
+    g = AttachOpExecs(g));
+  MXNET_PROFILER_NNVM_PASS("AttachOpResources",
+    g = AttachOpResources(g));
   graph_ = std::move(g);
 
   if (shared_exec != nullptr) {
@@ -793,13 +799,15 @@ void GraphExecutor::Init(nnvm::Symbol symbol,
       arg_dtypes[i] = it2->second;
     }
   }
-  g = nnvm::pass::InferShape(g, arg_shapes, "__shape__");
+  MXNET_PROFILER_NNVM_PASS("InferShape",
+    g = nnvm::pass::InferShape(g, arg_shapes, "__shape__"));
   if (g.GetAttr<size_t>("shape_num_unknown_nodes") != 0U) {
     HandleInferShapeError(num_forward_inputs_, g.indexed_graph(),
                           g.GetAttr<nnvm::ShapeVector>("shape"));
   }
 
-  g = nnvm::pass::InferType(g, arg_dtypes, "__dtype__");
+  MXNET_PROFILER_NNVM_PASS("InferType",
+    g = nnvm::pass::InferType(g, arg_dtypes, "__dtype__"));
   if (g.GetAttr<size_t>("dtype_num_unknown_nodes") != 0U) {
     HandleInferTypeError(num_forward_inputs_, g.indexed_graph(),
                          g.GetAttr<nnvm::DTypeVector>("dtype"));
